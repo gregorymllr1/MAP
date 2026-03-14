@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useMemo } from 'react';
-import { Package, Leaf, Settings, Calculator, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Package, Leaf, Settings, Calculator, Info, CheckCircle2, AlertTriangle, Thermometer } from 'lucide-react';
 
 // --- DATABASE CONSTANTS ---
 // OTR units: cc / 100in² × day × atm @ 22°C (for films and membranes)
@@ -234,7 +234,6 @@ export default function App() {
   const [length, setLength] = useState(8);
   const [depth, setDepth] = useState(4);
   const [weight, setWeight] = useState(1.0);
-  const [temperature, setTemperature] = useState(5);
   const [filmQ10, setFilmQ10] = useState(1.5);
   const [shelfLife, setShelfLife] = useState(14);
   const [allowMixed, setAllowMixed] = useState(true);
@@ -248,6 +247,7 @@ export default function App() {
 
     setTimeout(() => {
       const pData = PRODUCE_DATA[produce];
+      const temperature = pData.rec_temp;
       const target_o2 = pData.optimal_o2;
       const target_co2 = pData.optimal_co2;
       const rq = pData.rq || 1.0;
@@ -442,9 +442,8 @@ export default function App() {
                   <div><label className="text-xs text-slate-500 block">L (in)</label><input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" /></div>
                   <div><label className="text-xs text-slate-500 block">D (in)</label><input type="number" step="0.1" value={depth} onChange={e=>setDepth(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-slate-500 block">Weight (lbs)</label><input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" /></div>
-                  <div><label className="text-xs text-slate-500 block">Temp (°C)</label><input type="number" step="0.1" value={temperature} onChange={e=>setTemperature(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" /></div>
+                <div>
+                  <label className="text-xs text-slate-500 block">Weight (lbs)</label><input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" />
                 </div>
               </div>
 
@@ -501,11 +500,19 @@ export default function App() {
               <div className="space-y-6">
                 
                 {/* Info Header */}
-                <div className="bg-green-50/50 p-5 rounded-xl border border-green-200 grid grid-cols-3 gap-4">
+                <div className="bg-green-50/50 p-5 rounded-xl border border-green-200 grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <div className="text-[10px] font-bold text-green-800 uppercase tracking-widest mb-1">Produce</div>
                     <div className="text-xl font-black text-slate-800">{report.info.produce}</div>
                     <div className="text-xs text-slate-600 mt-1">Target: <b className="text-blue-600">{report.info.target_o2}% O₂</b> / <b className="text-orange-600">{report.info.target_co2}% CO₂</b></div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-green-800 uppercase tracking-widest mb-1">Optimal Temperature</div>
+                    <div className="flex items-center gap-1.5">
+                      <Thermometer size={18} className="text-cyan-600" />
+                      <span className="text-xl font-black text-cyan-700">{report.info.temperature}°C</span>
+                    </div>
+                    <div className="text-xs text-slate-600 mt-1">Auto-detected for {report.info.produce}</div>
                   </div>
                   <div>
                     <div className="text-[10px] font-bold text-green-800 uppercase tracking-widest mb-1">Package Payload</div>
