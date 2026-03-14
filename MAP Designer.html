@@ -193,11 +193,33 @@ function solveSteadyState(total_otr_o2, total_otr_co2, produce_data, temperature
 function scoreDesign(ss_o2, ss_co2, target_o2, target_co2, total_membranes, n_pinholes, n_membrane_types) {
   const o2_err = Math.abs(ss_o2 - target_o2) / Math.max(target_o2, 0.5);
   const co2_err = Math.abs(ss_co2 - target_co2) / Math.max(target_co2, 0.5);
-  let score = o2_err + co2_err;
-  score += total_membranes * 0.005;
-  score += n_pinholes * 0.002;
-  score += (n_membrane_types - 1) * 0.01;
+  
+  // Geometric mean rewards being close on BOTH gases equally
+  const geo_mean = Math.sqrt((o2_err + 0.001) * (co2_err + 0.001));
+  
+  // Balance penalty: punish designs that nail one gas but miss the other
+  const balance_penalty = Math.abs(o2_err - co2_err) * 0.3;
+  
+  // Additive component still matters for overall accuracy
+  const additive = (o2_err + co2_err) * 0.5;
+  
+  let score = geo_mean + balance_penalty + additive;
+  
+  // Small complexity penalties
+  score += total_membranes * 0.003;
+  score += n_pinholes * 0.001;
+  score += (n_membrane_types - 1) * 0.008;
   return score;
+}
+
+// Calculate the ideal effective CO2/O2 selectivity ratio needed for a produce target
+function calcIdealSelectivity(target_o2, target_co2) {
+  const delta_o2 = 0.209 - (target_o2 / 100.0);
+  const delta_co2 = (target_co2 / 100.0) - 0.0004;
+  if (delta_o2 <= 0 || delta_co2 <= 0) return null;
+  // At steady state: OTR_O2 * delta_O2 = respiration_O2 and OTR_CO2 * delta_CO2 = respiration_CO2
+  // So needed_ratio = (RQ * delta_O2) / delta_CO2 where RQ ≈ 1
+  return delta_o2 / delta_co2;
 }
 
 // --- UI COMPONENTS ---
@@ -260,6 +282,9 @@ export default function App() {
       const total_o2_demand = cc_o2_day * weight_kg;
       const total_co2_production = cc_co2_day * weight_kg;
 
+      // Pre-calculate ideal selectivity ratio for this produce
+      const ideal_selectivity = calcIdealSelectivity(target_o2, target_co2);
+
       const designs = [];
       const membrane_names = Object.keys(MEMBRANES);
 
@@ -297,6 +322,9 @@ export default function App() {
         
         const score = scoreDesign(ss_o2, ss_co2, target_o2, target_co2, total_mem, n_pin, n_types);
         
+        // Calculate achieved effective selectivity
+        const achieved_selectivity = tCO2 > 0 ? tO2 / tCO2 : null;
+
         const mem_desc = mc_list.filter(m => m.count > 0).map(m => `${m.count}x ${m.name} (${m.hole_diameter}")`).join(' + ') || 'None';
         const pin_desc = n_pin > 0 ? `${n_pin}x ${pin_type}` : 'None';
 
@@ -306,11 +334,13 @@ export default function App() {
           pinhole_desc: pin_desc, n_pinholes: n_pin,
           ss_o2_pct: ss_o2, ss_co2_pct: ss_co2,
           target_o2_pct: target_o2, target_co2_pct: target_co2,
+          achieved_selectivity,
           score: score
         };
       };
 
-      // PHASE 1: Single Membrane + Safety Pinholes
+      // PHASE 1: Single Membrane + Expanded Pinhole Search
+      // Uses Cramer's rule for initial estimate, then scans a wider neighborhood
       Object.keys(FILMS).forEach(film_name => {
         membrane_names.forEach(mem_name => {
           HOLE_SIZES.forEach(hole_diam => {
@@ -342,38 +372,54 @@ export default function App() {
                 const n_mem_exact = (rem_o2 * f_pin_co2 - f_pin_o2 * rem_co2) / det;
                 const n_pin_exact = (f_mem_o2 * rem_co2 - rem_o2 * f_mem_co2) / det;
 
-                // Test integer floors/ceilings
-                [Math.max(0, Math.floor(n_mem_exact)), Math.max(0, Math.ceil(n_mem_exact))].forEach(n_m => {
-                  // ENFORCE SAFETY RULE: Minimum 1 pinhole always required. Replaces `Math.max(0, ...)` with 1.
-                  [Math.max(1, Math.floor(n_pin_exact)), Math.max(1, Math.ceil(n_pin_exact))].forEach(n_p => {
-                    if (n_m <= 10 && n_p <= 30) {
-                      const d = tryConfigAndScore(film_name, [{name: mem_name, hole_diameter: hole_diam, count: n_m}], pinhole_type, n_p);
-                      if (d) designs.push(d);
-                    }
-                  });
-                });
+                // Expanded search: scan ±2 around the Cramer's rule solution
+                const mem_lo = Math.max(0, Math.floor(n_mem_exact) - 2);
+                const mem_hi = Math.min(10, Math.ceil(n_mem_exact) + 2);
+                const pin_lo = Math.max(1, Math.floor(n_pin_exact) - 3);  // min 1 for safety
+                const pin_hi = Math.min(30, Math.ceil(n_pin_exact) + 3);
+
+                for (let n_m = mem_lo; n_m <= mem_hi; n_m++) {
+                  for (let n_p = pin_lo; n_p <= pin_hi; n_p++) {
+                    const d = tryConfigAndScore(film_name, [{name: mem_name, hole_diameter: hole_diam, count: n_m}], pinhole_type, n_p);
+                    if (d) designs.push(d);
+                  }
+                }
+              }
+
+              // Also try pure-pinhole solutions (0 membranes) for CO2-sensitive produce
+              for (let n_p = 1; n_p <= 20; n_p++) {
+                const d = tryConfigAndScore(film_name, [{name: mem_name, hole_diameter: hole_diam, count: 0}], pinhole_type, n_p);
+                if (d) designs.push(d);
               }
             });
           });
         });
       });
 
-      // PHASE 2: Mixed Membranes (simplified to 2 types max to prevent browser hang)
+      // PHASE 2: Mixed Membranes with selectivity-aware targeting
+      // Reduced search space to prevent browser hang while still covering good selectivity territory
       if (allowMixed) {
+        const phase2_holes = [0.375, 0.5, 0.75, 1.0];
+        const phase2_pinholes = [1, 2, 4, 6, 10];
         Object.keys(FILMS).forEach(film_name => {
           for(let i=0; i<membrane_names.length; i++) {
             for(let j=i+1; j<membrane_names.length; j++) {
-              [0.5, 1.0].forEach(hole_a => { 
-                [0.5, 1.0].forEach(hole_b => {
+              phase2_holes.forEach(hole_a => { 
+                phase2_holes.forEach(hole_b => {
                   const ma = membrane_names[i], mb = membrane_names[j];
-                  for(let na=1; na<=3; na++) {
-                    for(let nb=1; nb<=3; nb++) {
-                      // ENFORCE SAFETY RULE: 1 Baseline Needle Pinhole
-                      const d = tryConfigAndScore(film_name, [
-                        {name: ma, hole_diameter: hole_a, count: na},
-                        {name: mb, hole_diameter: hole_b, count: nb}
-                      ], 'Needle', 1); 
-                      if (d) designs.push(d);
+                  for(let na=0; na<=3; na++) {
+                    for(let nb=0; nb<=3; nb++) {
+                      if (na === 0 && nb === 0) continue;
+                      // Test with key pinhole counts for CO2 tuning
+                      phase2_pinholes.forEach(np => {
+                        Object.keys(PINHOLES).forEach(pinhole_type => {
+                          const d = tryConfigAndScore(film_name, [
+                            {name: ma, hole_diameter: hole_a, count: na},
+                            {name: mb, hole_diameter: hole_b, count: nb}
+                          ], pinhole_type, np); 
+                          if (d) designs.push(d);
+                        });
+                      });
                     }
                   }
                 });
@@ -382,6 +428,40 @@ export default function App() {
           }
         });
       }
+
+      // PHASE 3: Local Refinement Pass
+      // Take the top candidates so far and test ±2 variations around each
+      const sorted_prelim = designs.sort((a,b) => a.score - b.score).slice(0, 40);
+      const refinement_designs = [];
+      sorted_prelim.forEach(d => {
+        // Parse the design to re-test variations
+        const parts = d.membrane_desc.split(' + ');
+        if (parts.length === 1 && parts[0] !== 'None') {
+          const match = parts[0].match(/(\d+)x\s+(\w+)\s+\(([\d.]+)"/); 
+          if (match) {
+            const base_count = parseInt(match[1]);
+            const mem_name = match[2];
+            const hole_d = parseFloat(match[3]);
+            const pin_match = d.pinhole_desc.match(/(\d+)x\s+(.+)/);
+            if (pin_match) {
+              const base_pin = parseInt(pin_match[1]);
+              const pin_type = pin_match[2];
+              // Test ±2 around the current solution
+              for (let dm = -2; dm <= 2; dm++) {
+                for (let dp = -2; dp <= 2; dp++) {
+                  const nm = base_count + dm;
+                  const np = base_pin + dp;
+                  if (nm >= 0 && nm <= 12 && np >= 1 && np <= 30) {
+                    const rd = tryConfigAndScore(d.film, [{name: mem_name, hole_diameter: hole_d, count: nm}], pin_type, np);
+                    if (rd) refinement_designs.push(rd);
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+      designs.push(...refinement_designs);
 
       // Sort and Deduplicate
       const unique = [];
@@ -395,7 +475,7 @@ export default function App() {
       });
 
       setReport({
-        info: { produce, pkg_area, weight_kg, weight_lbs: weight, rr, total_o2_demand, target_o2, target_co2, temperature, shelfLife, width, length, depth },
+        info: { produce, pkg_area, weight_kg, weight_lbs: weight, rr, total_o2_demand, target_o2, target_co2, temperature, shelfLife, width, length, depth, ideal_selectivity },
         designs: unique.slice(0, 30)
       });
       setIsCalculating(false);
@@ -527,6 +607,7 @@ export default function App() {
                     <div className="text-[10px] font-bold text-green-800 uppercase tracking-widest mb-1">Kinetics</div>
                     <div className="text-sm font-bold text-slate-800">O₂ Demand: {report.info.total_o2_demand.toFixed(0)} cc/day</div>
                     <div className="text-xs text-slate-600 mt-1">Respiration: {report.info.rr.toFixed(1)} mg/kg/h</div>
+                    {report.info.ideal_selectivity && <div className="text-xs text-purple-600 mt-1 font-semibold">Ideal selectivity: {report.info.ideal_selectivity.toFixed(2)}:1</div>}
                   </div>
                 </div>
 
@@ -561,6 +642,16 @@ export default function App() {
                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Steady-State Atmosphere Prediction</div>
                     <AccuracyBar ss_val={report.designs[0].ss_o2_pct} target_val={report.info.target_o2} label="Oxygen" />
                     <AccuracyBar ss_val={report.designs[0].ss_co2_pct} target_val={report.info.target_co2} label="Carbon" />
+                    {report.designs[0].achieved_selectivity && report.info.ideal_selectivity && (
+                      <div className="mt-3 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-800">
+                        <span className="font-bold">Selectivity Match:</span>{' '}
+                        Achieved {report.designs[0].achieved_selectivity.toFixed(2)}:1 vs Ideal {report.info.ideal_selectivity.toFixed(2)}:1
+                        {Math.abs(report.designs[0].achieved_selectivity - report.info.ideal_selectivity) / report.info.ideal_selectivity < 0.15
+                          ? <span className="ml-2 text-green-700 font-bold">✓ Well-matched</span>
+                          : <span className="ml-2 text-orange-600 font-bold">⚠ Limited by material selectivity</span>
+                        }
+                      </div>
+                    )}
                   </div>
                 </div>
 
