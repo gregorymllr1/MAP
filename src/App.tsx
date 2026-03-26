@@ -226,17 +226,17 @@ const AccuracyBar = ({ ss_val, target_val, label, unit = "%" }) => {
     : 'linear-gradient(90deg, #10b981 0%, #22c55e 55%, #a7f3d0 100%)';
 
   return (
-    <div className="my-2 grid grid-cols-[30px_1fr_auto] items-center gap-3 md:grid-cols-[36px_110px_1fr_auto_auto]">
+    <div className="my-2 grid grid-cols-[28px_1fr_auto] items-center gap-2 md:grid-cols-[32px_96px_1fr_auto_auto]">
       <span className="text-xl leading-none font-bold text-slate-900 md:text-3xl">{label}</span>
       <span className="hidden text-sm text-slate-700 md:block">Target: {target_val}{unit}</span>
-      <div className="h-4 overflow-hidden rounded-full bg-gradient-to-r from-slate-100 to-slate-200 shadow-inner md:h-6">
+      <div className="h-4 overflow-hidden rounded-full bg-gradient-to-r from-slate-100 to-slate-200 shadow-inner md:h-5">
         <div
           style={{ width: `${bar_w}%`, background: fillGradient }}
           className="h-full rounded-full transition-all duration-500"
         />
       </div>
-      <span className="w-14 text-right text-lg font-black tracking-tight md:text-3xl" style={{ color: valueColor }}>{ss_val.toFixed(1)}{unit}</span>
-      <span className="w-20 text-right text-xs font-semibold md:text-xl" style={{ color: valueColor }}>{grade}</span>
+      <span className="w-14 text-right text-lg font-black tracking-tight md:text-2xl" style={{ color: valueColor }}>{ss_val.toFixed(1)}{unit}</span>
+      <span className="w-20 text-right text-xs font-semibold md:text-lg" style={{ color: valueColor }}>{grade}</span>
     </div>
   );
 };
@@ -416,16 +416,16 @@ export default function App() {
       <div className="mx-auto max-w-[1440px] space-y-6">
 
         {/* Header */}
-        <div className="relative mb-2 h-[128px] overflow-visible rounded-[24px] bg-gradient-to-r from-[#0b1220] via-[#14263f] to-[#0b1220] shadow-[inset_0_1px_0_rgba(16,185,129,0.35),0_14px_34px_rgba(15,23,42,0.28)]">
-          <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-3">
-            <div className="rounded-[26px] border border-emerald-300/30 bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-4 text-white shadow-[0_12px_26px_rgba(16,185,129,0.4)]">
+        <div className="relative mb-2 h-[112px] overflow-visible rounded-[24px] bg-gradient-to-r from-[#0a1120] via-[#12223a] to-[#0a1120] shadow-[inset_0_1px_0_rgba(16,185,129,0.45),0_14px_32px_rgba(15,23,42,0.25)]">
+          <div className="absolute inset-x-0 top-0 flex justify-center px-3">
+            <div className="rounded-b-[26px] rounded-t-[18px] border border-emerald-300/35 bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 text-white shadow-[0_10px_22px_rgba(16,185,129,0.35)]">
               <div className="flex items-center gap-4">
                 <div className="rounded-xl bg-white/90 p-3 text-emerald-600 shadow-sm">
-                  <Wind size={28} />
+                  <Wind size={24} />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black tracking-tight md:text-5xl">MAP Designer</h1>
-                  <p className="text-sm text-emerald-50 md:text-lg">Quadratic Steady-State Solver • Mogri et al. Kinetics</p>
+                  <h1 className="text-3xl font-black tracking-tight md:text-4xl">MAP Designer</h1>
+                  <p className="text-xs text-emerald-50 md:text-base">Quadratic Steady-State Solver • Mogri et al. Kinetics</p>
                 </div>
               </div>
             </div>
@@ -442,13 +442,13 @@ export default function App() {
             >
 
               <div>
-                <label className="mb-3 flex items-center text-2xl font-bold tracking-tight text-white md:text-3xl">
+                <label className="mb-3 flex items-center text-2xl font-bold tracking-tight text-white md:text-[2rem]">
                   <Leaf size={22} className="mr-2 text-emerald-300" /> Produce Select
                 </label>
                 <select
                   value={produce}
                   onChange={(e) => setProduce(e.target.value)}
-                  className="w-full rounded-xl border border-emerald-300/70 bg-white px-4 py-3 text-lg text-slate-900 outline-none transition focus:border-emerald-300 md:text-xl"
+                  className="w-full rounded-xl border border-emerald-300/70 bg-white px-4 py-3 text-lg text-slate-900 outline-none transition focus:border-emerald-300 md:text-lg"
                 >
                   <optgroup label="Fruits">
                     {Object.entries(PRODUCE_DATA).filter(([_, v]) => v.category === 'fruit').map(([k, _]) => <option key={k} value={k} className="text-slate-900 bg-white">{k}</option>)}
@@ -460,35 +460,35 @@ export default function App() {
               </div>
 
               <div className="border-t border-emerald-300/30 pt-5">
-                <label className="mb-4 flex items-center text-2xl font-bold tracking-tight text-white md:text-3xl">
+                <label className="mb-4 flex items-center text-2xl font-bold tracking-tight text-white md:text-[2rem]">
                   <Settings size={22} className="mr-2 text-emerald-300" /> Package Profile
                 </label>
                 <div className="mb-4 grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-emerald-100/90 md:text-base">W (in)</label>
-                    <input type="number" step="0.1" value={width} onChange={e=>setWidth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-2xl" />
+                    <input type="number" step="0.1" value={width} onChange={e=>setWidth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-xl" />
                   </div>
                   <div>
                     <label className="block text-sm text-emerald-100/90 md:text-base">L (in)</label>
-                    <input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-2xl" />
+                    <input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-xl" />
                   </div>
                   <div>
                     <label className="block text-sm text-emerald-100/90 md:text-base">D (in)</label>
-                    <input type="number" step="0.1" value={depth} onChange={e=>setDepth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-2xl" />
+                    <input type="number" step="0.1" value={depth} onChange={e=>setDepth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-xl" />
                   </div>
                   <div>
                     <label className="block text-sm text-emerald-100/90 md:text-base">Weight (lbs)</label>
-                    <input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-2xl" />
+                    <input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-xl" />
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 pt-1">
                 <input type="checkbox" checked={allowMixed} onChange={e=>setAllowMixed(e.target.checked)} className="h-6 w-6 rounded border-emerald-200 text-emerald-500" id="mixed" />
-                <label htmlFor="mixed" className="cursor-pointer text-base font-medium text-emerald-50 md:text-lg">Explore Mixed-Membrane Arrays</label>
+                <label htmlFor="mixed" className="cursor-pointer text-base font-medium text-emerald-50 md:text-base">Explore Mixed-Membrane Arrays</label>
               </div>
 
-              <button type="submit" disabled={isCalculating} className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 py-4 text-xl font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.45)] transition hover:brightness-110 md:text-xl">
+              <button type="submit" disabled={isCalculating} className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 py-4 text-xl font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.45)] transition hover:brightness-110 md:text-lg">
                 {isCalculating ? "Running Determinants..." : <><Calculator size={18} className="mr-2" /> Solve Steady-State</>}
               </button>
             </form>
@@ -539,25 +539,25 @@ export default function App() {
                 <div className="grid gap-4 rounded-[24px] border border-emerald-200 bg-gradient-to-r from-emerald-50 via-slate-50 to-emerald-50 p-6 md:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <div className="mb-1 text-[11px] font-black uppercase tracking-widest text-emerald-800">Produce</div>
-                    <div className="text-2xl font-black text-slate-900 md:text-4xl">{report.info.produce}</div>
+                    <div className="text-2xl font-black text-slate-900 md:text-3xl">{report.info.produce}</div>
                     <div className="mt-1 text-sm text-slate-700 md:text-base">Target: <b className="text-blue-700">{report.info.target_o2}% O₂</b> / <b className="text-orange-600">{report.info.target_co2}% CO₂</b></div>
                   </div>
                   <div>
                     <div className="mb-1 text-[11px] font-black uppercase tracking-widest text-emerald-800">Optimal Temperature</div>
                     <div className="flex items-center gap-1.5">
                       <Thermometer size={20} className="text-cyan-600" />
-                      <span className="text-2xl font-black text-slate-900 md:text-4xl">{report.info.temperature}°C</span>
+                      <span className="text-2xl font-black text-slate-900 md:text-3xl">{report.info.temperature}°C</span>
                     </div>
                     <div className="mt-1 text-sm text-slate-700 md:text-base">Auto-detected for {report.info.produce}</div>
                   </div>
                   <div>
                     <div className="mb-1 text-[11px] font-black uppercase tracking-widest text-emerald-800">Package Payload</div>
-                    <div className="text-xl font-black text-slate-900 md:text-3xl">{report.info.width}" x {report.info.length}" x {report.info.depth}"</div>
+                    <div className="text-xl font-black text-slate-900 md:text-2xl">{report.info.width}" x {report.info.length}" x {report.info.depth}"</div>
                     <div className="mt-1 text-sm text-slate-700 md:text-base">Total area: <b>{report.info.pkg_area.toFixed(0)} sq.in.</b></div>
                   </div>
                   <div>
                     <div className="mb-1 text-[11px] font-black uppercase tracking-widest text-emerald-800">Kinetics</div>
-                    <div className="text-xl font-black text-slate-900 md:text-3xl">O₂ Demand: {report.info.total_o2_demand.toFixed(0)} cc/day</div>
+                    <div className="text-xl font-black text-slate-900 md:text-2xl">O₂ Demand: {report.info.total_o2_demand.toFixed(0)} cc/day</div>
                     <div className="mt-1 text-sm text-slate-700 md:text-base">Respiration: {report.info.rr.toFixed(1)} mg/kg/h</div>
                   </div>
                 </div>
@@ -568,23 +568,23 @@ export default function App() {
                   
                   <div className="flex items-center gap-3 mb-5">
                     <CheckCircle2 className="text-green-600" />
-                    <h2 className="text-3xl font-black text-slate-900 md:text-5xl">Optimal Configuration</h2>
+                    <h2 className="text-3xl font-black text-slate-900 md:text-4xl">Optimal Configuration</h2>
                     {report.designs[0].is_mixed && <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold text-white md:text-xs">MIXED ARRAY</span>}
                   </div>
 
                   <div className="mb-6 grid gap-4 md:grid-cols-3">
                     <div className="rounded-2xl border border-slate-200 bg-slate-100/80 p-4">
                       <div className="mb-1 text-[11px] font-black uppercase text-slate-600">Base Film</div>
-                      <div className="text-xl font-black text-slate-900 md:text-3xl">{report.designs[0].film}</div>
-                      <div className="mt-1 text-base text-slate-500 md:text-2xl">{report.designs[0].film_cost}</div>
+                      <div className="text-xl font-black text-slate-900 md:text-2xl">{report.designs[0].film}</div>
+                      <div className="mt-1 text-base text-slate-500 md:text-xl">{report.designs[0].film_cost}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-100/80 p-4">
                       <div className="mb-1 text-[11px] font-black uppercase text-slate-600">Membrane Array</div>
-                      <div className="text-xl font-black text-slate-900 md:text-3xl">{report.designs[0].membrane_desc}</div>
+                      <div className="text-xl font-black text-slate-900 md:text-2xl">{report.designs[0].membrane_desc}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-100/80 p-4">
                       <div className="mb-1 text-[11px] font-black uppercase text-slate-600">Safety Pinholes</div>
-                      <div className="text-xl font-black text-slate-900 md:text-3xl">{report.designs[0].pinhole_desc}</div>
+                      <div className="text-xl font-black text-slate-900 md:text-2xl">{report.designs[0].pinhole_desc}</div>
                     </div>
                   </div>
 
@@ -596,7 +596,7 @@ export default function App() {
                 <div className="overflow-hidden rounded-[24px] border border-slate-300 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
                   <div className="flex items-center gap-2 border-b border-slate-100 p-5">
                     <Info size={18} className="text-slate-500" />
-                    <h3 className="text-3xl font-black text-slate-900 md:text-5xl">All Feasible Designs ({report.designs.length})</h3>
+                    <h3 className="text-3xl font-black text-slate-900 md:text-4xl">All Feasible Designs ({report.designs.length})</h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs md:text-base">
