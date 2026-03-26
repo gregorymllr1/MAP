@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useMemo } from 'react';
-import { Package, Leaf, Settings, Calculator, Info, CheckCircle2, AlertTriangle, Thermometer } from 'lucide-react';
+import { Wind, Leaf, Settings, Calculator, Info, CheckCircle2, AlertTriangle, Thermometer } from 'lucide-react';
 
 // --- DATABASE CONSTANTS ---
 // OTR units: cc / 100in² × day × atm @ 22°C (for films and membranes)
@@ -207,23 +207,36 @@ const AccuracyBar = ({ ss_val, target_val, label, unit = "%" }) => {
   const err = Math.abs(ss_val - target_val);
   const pct_err = (err / Math.max(target_val, 0.5)) * 100;
   
-  let color = "#ef4444", grade = "Off-target";
-  if (pct_err <= 5) { color = "#22c55e"; grade = "Excellent"; }
-  else if (pct_err <= 15) { color = "#84cc16"; grade = "Good"; }
-  else if (pct_err <= 30) { color = "#eab308"; grade = "Fair"; }
-  else if (pct_err <= 60) { color = "#f97316"; grade = "Poor"; }
+  let grade = "Off-target";
+  if (pct_err <= 5) grade = "Excellent";
+  else if (pct_err <= 15) grade = "Good";
+  else if (pct_err <= 30) grade = "Fair";
+  else if (pct_err <= 60) grade = "Poor";
+
+  const isCO2 = label.includes("CO");
+  let valueColor = "#ef4444";
+  if (pct_err <= 5) valueColor = "#16a34a";
+  else if (pct_err <= 15) valueColor = "#65a30d";
+  else if (pct_err <= 30) valueColor = isCO2 ? "#ca8a04" : "#d97706";
+  else if (pct_err <= 60) valueColor = "#ea580c";
   
   const bar_w = Math.max(2, Math.min(100, 100 - pct_err));
+  const fillGradient = isCO2
+    ? 'linear-gradient(90deg, #10b981 0%, #22c55e 45%, #eab308 72%, #fef08a 100%)'
+    : 'linear-gradient(90deg, #10b981 0%, #22c55e 55%, #a7f3d0 100%)';
 
   return (
-    <div className="my-1.5 flex items-center gap-3">
-      <span className="w-12 font-semibold text-sm">{label}</span>
-      <span className="text-sm w-24 text-slate-500">Target: {target_val}{unit}</span>
-      <div className="flex-1 bg-slate-200 rounded h-4 relative overflow-hidden">
-        <div style={{ width: `${bar_w}%`, backgroundColor: color }} className="h-full rounded transition-all duration-500" />
+    <div className="my-2 grid grid-cols-[46px_1fr_auto] items-center gap-3 md:grid-cols-[46px_96px_1fr_auto_auto]">
+      <span className="text-2xl leading-none font-semibold text-slate-900">{label}</span>
+      <span className="hidden text-base text-slate-700 md:block">Target: {target_val}{unit}</span>
+      <div className="h-5 overflow-hidden rounded-full bg-gradient-to-r from-slate-100 to-slate-200 shadow-inner">
+        <div
+          style={{ width: `${bar_w}%`, background: fillGradient }}
+          className="h-full rounded-full transition-all duration-500"
+        />
       </div>
-      <span className="text-sm font-bold w-16" style={{ color }}>{ss_val.toFixed(1)}{unit}</span>
-      <span className="text-xs text-slate-400 w-16 text-right">{grade}</span>
+      <span className="w-16 text-right text-3xl font-black tracking-tight" style={{ color: valueColor }}>{ss_val.toFixed(1)}{unit}</span>
+      <span className="w-20 text-right text-xl font-semibold" style={{ color: valueColor }}>{grade}</span>
     </div>
   );
 };
@@ -399,31 +412,44 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        
+    <div className="min-h-screen bg-[#e9ecef] text-slate-900 p-4 md:p-8">
+      <div className="mx-auto max-w-[1400px] space-y-6">
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-800 to-green-600 p-6 flex flex-col md:flex-row items-center justify-between rounded-xl shadow-lg text-white">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/20 p-3 rounded-lg"><Package size={32} /></div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-wide">MAP Designer</h1>
-              <p className="text-green-100 text-sm mt-1">Quadratic Steady-State Solver • Mogri et al. Kinetics</p>
+        <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
+          <div className="hidden h-[140px] rounded-[24px] bg-gradient-to-r from-[#0b1220] to-[#17283f] shadow-[inset_0_1px_0_rgba(16,185,129,0.25)] md:block" />
+          <div className="rounded-[30px] bg-gradient-to-r from-emerald-500 to-green-600 px-8 py-6 text-white shadow-[0_12px_30px_rgba(16,185,129,0.45)]">
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl bg-white/90 p-3 text-emerald-600 shadow-sm">
+                <Wind size={34} />
+              </div>
+              <div>
+                <h1 className="text-5xl font-black tracking-tight">MAP Designer</h1>
+                <p className="text-lg text-emerald-50">Quadratic Steady-State Solver • Mogri et al. Kinetics</p>
+              </div>
             </div>
           </div>
+          <div className="hidden h-[140px] rounded-[24px] bg-gradient-to-l from-[#0b1220] to-[#17283f] shadow-[inset_0_1px_0_rgba(16,185,129,0.25)] md:block" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+        <div className="grid grid-cols-1 gap-7 xl:grid-cols-12">
+
           {/* Controls */}
-          <div className="lg:col-span-4 space-y-6">
-            <form onSubmit={calculateDesign} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-5">
-              
+          <div className="xl:col-span-3">
+            <form
+              onSubmit={calculateDesign}
+              className="space-y-7 rounded-[24px] border border-emerald-400/60 bg-gradient-to-br from-[#111d2d] via-[#1a2b43] to-[#11232f] p-7 text-white shadow-[0_12px_40px_rgba(16,185,129,0.45)]"
+            >
+
               <div>
-                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                  <Leaf size={16} className="mr-2 text-green-600" /> Produce Select
+                <label className="mb-3 flex items-center text-4xl font-bold tracking-tight text-white">
+                  <Leaf size={22} className="mr-2 text-emerald-300" /> Produce Select
                 </label>
-                <select value={produce} onChange={(e) => setProduce(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+                <select
+                  value={produce}
+                  onChange={(e) => setProduce(e.target.value)}
+                  className="w-full rounded-xl border border-emerald-400/80 bg-transparent px-4 py-3 text-xl text-emerald-50 outline-none transition focus:border-emerald-300"
+                >
                   <optgroup label="Fruits">
                     {Object.entries(PRODUCE_DATA).filter(([_, v]) => v.category === 'fruit').map(([k, _]) => <option key={k} value={k}>{k}</option>)}
                   </optgroup>
@@ -433,122 +459,132 @@ export default function App() {
                 </select>
               </div>
 
-              <div className="border-t border-slate-200 pt-4">
-                <label className="flex items-center text-sm font-semibold text-slate-700 mb-3">
-                  <Settings size={16} className="mr-2 text-slate-500" /> Package Profile
+              <div className="border-t border-emerald-300/30 pt-5">
+                <label className="mb-4 flex items-center text-4xl font-bold tracking-tight text-white">
+                  <Settings size={22} className="mr-2 text-emerald-300" /> Package Profile
                 </label>
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div><label className="text-xs text-slate-500 block">W (in)</label><input type="number" step="0.1" value={width} onChange={e=>setWidth(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" /></div>
-                  <div><label className="text-xs text-slate-500 block">L (in)</label><input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" /></div>
-                  <div><label className="text-xs text-slate-500 block">D (in)</label><input type="number" step="0.1" value={depth} onChange={e=>setDepth(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" /></div>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-500 block">Weight (lbs)</label><input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-300 rounded" />
+                <div className="mb-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-emerald-100/90">W (in)</label>
+                    <input type="number" step="0.1" value={width} onChange={e=>setWidth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-2xl text-slate-800" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-emerald-100/90">L (in)</label>
+                    <input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-2xl text-slate-800" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-emerald-100/90">D (in)</label>
+                    <input type="number" step="0.1" value={depth} onChange={e=>setDepth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-2xl text-slate-800" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-emerald-100/90">Weight (lbs)</label>
+                    <input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-2xl text-slate-800" />
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center gap-2">
-                <input type="checkbox" checked={allowMixed} onChange={e=>setAllowMixed(e.target.checked)} className="w-4 h-4 text-green-600 rounded" id="mixed" />
-                <label htmlFor="mixed" className="text-sm font-medium text-slate-700 cursor-pointer">Explore Mixed-Membrane Arrays</label>
+              <div className="flex items-center gap-3 pt-1">
+                <input type="checkbox" checked={allowMixed} onChange={e=>setAllowMixed(e.target.checked)} className="h-6 w-6 rounded border-emerald-200 text-emerald-500" id="mixed" />
+                <label htmlFor="mixed" className="cursor-pointer text-xl font-medium text-emerald-50">Explore Mixed-Membrane Arrays</label>
               </div>
 
-              <button type="submit" disabled={isCalculating} className="w-full py-3 bg-green-700 hover:bg-green-800 text-white rounded-lg font-bold flex justify-center items-center shadow-md">
+              <button type="submit" disabled={isCalculating} className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 py-4 text-2xl font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.45)] transition hover:brightness-110">
                 {isCalculating ? "Running Determinants..." : <><Calculator size={18} className="mr-2" /> Solve Steady-State</>}
               </button>
             </form>
           </div>
 
           {/* Results */}
-          <div className="lg:col-span-8">
+          <div className="space-y-6 xl:col-span-9">
             {report === null ? (
-              <div className="bg-white border border-slate-200 p-8 rounded-xl shadow-sm h-full flex flex-col justify-center">
-                <h2 className="text-2xl font-bold text-slate-800 mb-3">Modified Atmosphere Packaging Design Tool</h2>
-                <p className="text-slate-600 text-sm mb-8 leading-relaxed">
+              <div className="flex h-full flex-col justify-center rounded-[24px] border border-emerald-200 bg-white/80 p-8 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+                <h2 className="mb-3 text-3xl font-black text-slate-900">Modified Atmosphere Packaging Design Tool</h2>
+                <p className="mb-8 text-base text-slate-700">
                   Based on the model outlined in <strong className="text-slate-800">Mogri et al. (2001)</strong> using Breatheway MAP technology with side-chain crystallizable polyacrylate/polymethacrylate membranes.
                 </p>
 
-                <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 mb-4">Model Overview</h3>
-                <p className="text-slate-600 text-sm mb-4">
+                <h3 className="mb-4 border-b border-slate-200 pb-2 text-xl font-black text-slate-900">Model Overview</h3>
+                <p className="mb-4 text-sm text-slate-700">
                   The design uses <strong className="text-slate-800">Michaelis-Menten enzyme kinetics</strong> for produce respiration:
                 </p>
 
-                <div className="bg-slate-50 p-4 rounded-lg mb-4 text-center font-serif text-lg tracking-wide text-slate-700">
+                <div className="mb-4 rounded-xl bg-slate-100 p-4 text-center font-serif text-lg tracking-wide text-slate-700">
                   R<sub>O₂</sub> = (V<sub>m</sub> · [O₂]) / (K<sub>m</sub> + [O₂])
                 </div>
 
-                <p className="text-slate-600 text-sm mb-2">Where:</p>
-                <ul className="list-disc list-inside text-slate-600 text-sm mb-8 space-y-1.5 ml-2">
+                <p className="mb-2 text-sm text-slate-700">Where:</p>
+                <ul className="mb-8 ml-2 list-inside list-disc space-y-1.5 text-sm text-slate-700">
                   <li><span className="font-serif">V<sub>m</sub> = a<sub>fac</sub> · a<sub>1</sub> · e<sup>a<sub>2</sub> · T</sup></span> — maximum respiration rate</li>
                   <li><span className="font-serif">K<sub>m</sub> = b<sub>fac</sub> · (b<sub>1</sub> + b<sub>2</sub> · T)</span> — Michaelis-Menten constant</li>
                 </ul>
 
-                <p className="text-slate-600 text-sm mb-3">
+                <p className="mb-3 text-sm text-slate-700">
                   <strong className="text-slate-800">Steady-state mass balance</strong> determines package atmosphere:
                 </p>
-                <div className="bg-slate-50 p-5 rounded-lg space-y-3 font-serif text-slate-700 text-sm md:text-base">
+                <div className="space-y-3 rounded-xl bg-slate-100 p-5 font-serif text-sm text-slate-700 md:text-base">
                   <div><span className="font-sans font-bold text-slate-500 mr-2">O₂:</span> Total OTR × (0.209 − y<sub>O₂</sub>) = R<sub>O₂</sub> × W</div>
                   <div><span className="font-sans font-bold text-slate-500 mr-2">CO₂:</span> Total CO₂TR × (y<sub>CO₂</sub> − 0.0004) = R<sub>CO₂</sub> × W</div>
                 </div>
               </div>
             ) : report.designs.length === 0 ? (
-              <div className="bg-red-50 p-8 rounded-xl border border-red-200 flex flex-col items-center justify-center text-red-600 h-full">
+              <div className="flex h-full flex-col items-center justify-center rounded-[24px] border border-red-200 bg-red-50 p-8 text-red-600">
                 <AlertTriangle size={48} className="mb-4" />
-                <h3 className="text-xl font-bold">No Feasible Designs Found</h3>
-                <p className="text-sm mt-2 text-center">Try increasing package area, as all packages require at least 1 baseline pinhole.</p>
+                <h3 className="text-2xl font-black">No Feasible Designs Found</h3>
+                <p className="mt-2 text-center text-sm">Try increasing package area, as all packages require at least 1 baseline pinhole.</p>
               </div>
             ) : (
               <div className="space-y-6">
                 
                 {/* Info Header */}
-                <div className="bg-green-50/50 p-5 rounded-xl border border-green-200 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid gap-4 rounded-[24px] border border-emerald-200 bg-gradient-to-r from-emerald-50 via-slate-50 to-emerald-50 p-6 md:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <div className="text-[10px] font-bold text-green-800 uppercase tracking-widest mb-1">Produce</div>
-                    <div className="text-xl font-black text-slate-800">{report.info.produce}</div>
-                    <div className="text-xs text-slate-600 mt-1">Target: <b className="text-blue-600">{report.info.target_o2}% O₂</b> / <b className="text-orange-600">{report.info.target_co2}% CO₂</b></div>
+                    <div className="mb-1 text-[11px] font-black uppercase tracking-widest text-emerald-800">Produce</div>
+                    <div className="text-4xl font-black text-slate-900">{report.info.produce}</div>
+                    <div className="mt-1 text-sm text-slate-700">Target: <b className="text-blue-700">{report.info.target_o2}% O₂</b> / <b className="text-orange-600">{report.info.target_co2}% CO₂</b></div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-green-800 uppercase tracking-widest mb-1">Optimal Temperature</div>
+                    <div className="mb-1 text-[11px] font-black uppercase tracking-widest text-emerald-800">Optimal Temperature</div>
                     <div className="flex items-center gap-1.5">
-                      <Thermometer size={18} className="text-cyan-600" />
-                      <span className="text-xl font-black text-cyan-700">{report.info.temperature}°C</span>
+                      <Thermometer size={20} className="text-cyan-600" />
+                      <span className="text-4xl font-black text-slate-900">{report.info.temperature}°C</span>
                     </div>
-                    <div className="text-xs text-slate-600 mt-1">Auto-detected for {report.info.produce}</div>
+                    <div className="mt-1 text-sm text-slate-700">Auto-detected for {report.info.produce}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-green-800 uppercase tracking-widest mb-1">Package Payload</div>
-                    <div className="text-sm font-bold text-slate-800">{report.info.width}" x {report.info.length}" x {report.info.depth}"</div>
-                    <div className="text-xs text-slate-600 mt-1">Total area: <b>{report.info.pkg_area.toFixed(0)} sq.in.</b></div>
+                    <div className="mb-1 text-[11px] font-black uppercase tracking-widest text-emerald-800">Package Payload</div>
+                    <div className="text-2xl font-black text-slate-900">{report.info.width}" x {report.info.length}" x {report.info.depth}"</div>
+                    <div className="mt-1 text-sm text-slate-700">Total area: <b>{report.info.pkg_area.toFixed(0)} sq.in.</b></div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-green-800 uppercase tracking-widest mb-1">Kinetics</div>
-                    <div className="text-sm font-bold text-slate-800">O₂ Demand: {report.info.total_o2_demand.toFixed(0)} cc/day</div>
-                    <div className="text-xs text-slate-600 mt-1">Respiration: {report.info.rr.toFixed(1)} mg/kg/h</div>
+                    <div className="mb-1 text-[11px] font-black uppercase tracking-widest text-emerald-800">Kinetics</div>
+                    <div className="text-2xl font-black text-slate-900">O₂ Demand: {report.info.total_o2_demand.toFixed(0)} cc/day</div>
+                    <div className="mt-1 text-sm text-slate-700">Respiration: {report.info.rr.toFixed(1)} mg/kg/h</div>
                   </div>
                 </div>
 
                 {/* Best Match */}
-                <div className="bg-white border-2 border-green-600 p-6 rounded-xl shadow-sm relative">
-                  <div className="absolute top-0 right-0 bg-green-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">RECOMMENDED DESIGN</div>
+                <div className="relative rounded-[24px] border-2 border-emerald-500 bg-gradient-to-b from-white to-emerald-50/40 p-6 shadow-[0_10px_30px_rgba(16,185,129,0.35)]">
+                  <div className="absolute right-5 top-4 rounded-full bg-emerald-600 px-4 py-1 text-sm font-black text-white">RECOMMENDED DESIGN</div>
                   
                   <div className="flex items-center gap-3 mb-5">
                     <CheckCircle2 className="text-green-600" />
-                    <h2 className="text-lg font-black text-slate-800">Optimal Configuration</h2>
-                    {report.designs[0].is_mixed && <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">MIXED ARRAY</span>}
+                    <h2 className="text-5xl font-black text-slate-900">Optimal Configuration</h2>
+                    {report.designs[0].is_mixed && <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">MIXED ARRAY</span>}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Base Film</div>
-                      <div className="font-bold text-sm text-slate-800">{report.designs[0].film}</div>
-                      <div className="text-xs text-slate-400 mt-1">{report.designs[0].film_cost}</div>
+                  <div className="mb-6 grid gap-4 md:grid-cols-3">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-100/80 p-4">
+                      <div className="mb-1 text-[11px] font-black uppercase text-slate-600">Base Film</div>
+                      <div className="text-2xl font-black text-slate-900">{report.designs[0].film}</div>
+                      <div className="mt-1 text-lg text-slate-500">{report.designs[0].film_cost}</div>
                     </div>
-                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Membrane Array</div>
-                      <div className="font-bold text-sm text-slate-800">{report.designs[0].membrane_desc}</div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-100/80 p-4">
+                      <div className="mb-1 text-[11px] font-black uppercase text-slate-600">Membrane Array</div>
+                      <div className="text-2xl font-black text-slate-900">{report.designs[0].membrane_desc}</div>
                     </div>
-                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Safety Pinholes</div>
-                      <div className="font-bold text-sm text-slate-800">{report.designs[0].pinhole_desc}</div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-100/80 p-4">
+                      <div className="mb-1 text-[11px] font-black uppercase text-slate-600">Safety Pinholes</div>
+                      <div className="text-2xl font-black text-slate-900">{report.designs[0].pinhole_desc}</div>
                     </div>
                   </div>
 
@@ -557,32 +593,32 @@ export default function App() {
                 </div>
 
                 {/* All Designs */}
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                  <div className="p-4 border-b border-slate-100 flex items-center gap-2">
-                    <Info size={16} className="text-slate-400" />
-                    <h3 className="font-bold text-slate-700">All Feasible Designs ({report.designs.length})</h3>
+                <div className="overflow-hidden rounded-[24px] border border-slate-300 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+                  <div className="flex items-center gap-2 border-b border-slate-100 p-5">
+                    <Info size={18} className="text-slate-500" />
+                    <h3 className="text-5xl font-black text-slate-900">All Feasible Designs ({report.designs.length})</h3>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead className="bg-slate-50">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-100">
                         <tr>
-                          <th className="p-3 text-left font-bold text-slate-500">Film</th>
-                          <th className="p-3 text-left font-bold text-slate-500">Membranes</th>
-                          <th className="p-3 text-left font-bold text-slate-500">Pinholes</th>
-                          <th className="p-3 text-center font-bold text-blue-600">O₂ %</th>
-                          <th className="p-3 text-center font-bold text-orange-600">CO₂ %</th>
-                          <th className="p-3 text-center font-bold text-slate-500">Score</th>
+                          <th className="p-3 text-left font-black text-slate-700">Film</th>
+                          <th className="p-3 text-left font-black text-slate-700">Membranes</th>
+                          <th className="p-3 text-left font-black text-slate-700">Pinholes</th>
+                          <th className="p-3 text-center font-black text-blue-700">O₂ %</th>
+                          <th className="p-3 text-center font-black text-green-700">CO₂ %</th>
+                          <th className="p-3 text-center font-black text-slate-700">Score</th>
                         </tr>
                       </thead>
                       <tbody>
                         {report.designs.map((d, i) => (
-                          <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                            <td className="p-3 font-medium text-slate-700">{d.film} <span className="text-slate-400">{d.film_cost}</span></td>
-                            <td className="p-3 text-slate-600">{d.membrane_desc} {d.is_mixed && <span className="bg-orange-100 text-orange-600 text-[9px] font-bold px-1 rounded">MIX</span>}</td>
-                            <td className="p-3 text-slate-600">{d.pinhole_desc}</td>
-                            <td className="p-3 text-center font-bold text-blue-700">{d.ss_o2_pct.toFixed(1)}</td>
-                            <td className="p-3 text-center font-bold text-orange-700">{d.ss_co2_pct.toFixed(1)}</td>
-                            <td className="p-3 text-center text-slate-500">{d.score.toFixed(3)}</td>
+                          <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/75'}>
+                            <td className="p-3 font-semibold text-slate-800">{d.film} <span className="text-slate-500">{d.film_cost}</span></td>
+                            <td className="p-3 text-slate-700">{d.membrane_desc} {d.is_mixed && <span className="rounded bg-orange-100 px-1 text-[10px] font-bold text-orange-600">MIX</span>}</td>
+                            <td className="p-3 text-slate-700">{d.pinhole_desc}</td>
+                            <td className="p-3 text-center font-black text-emerald-700">{d.ss_o2_pct.toFixed(1)}</td>
+                            <td className="p-3 text-center font-black text-emerald-700">{d.ss_co2_pct.toFixed(1)}</td>
+                            <td className="p-3 text-center font-bold text-slate-700">{d.score.toFixed(3)}</td>
                           </tr>
                         ))}
                       </tbody>
