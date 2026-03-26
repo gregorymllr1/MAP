@@ -472,9 +472,93 @@ export default function App() {
         }
       });
 
+      // --- DIAGNOSTIC ANALYSIS ---
+      const diagnostics = [];
+      const bestDesigns = unique.slice(0, 30);
+
+      // Check for physically impossible CO2 target
+      if (target_co2 <= 0) {
+        diagnostics.push({
+          type: 'error',
+          title: 'CO₂ target of 0% is physically unachievable',
+          detail: 'All respiring produce generates CO₂ that accumulates inside a sealed package. A 0% CO₂ target cannot be reached with any MAP design. Consider perforated or open packaging, or accept a low but nonzero CO₂ level.'
+        });
+      }
+
+      // Check if O2 demand vastly exceeds package capability  
+      if (bestDesigns.length === 0) {
+        const maxFilmOTR = Math.max(...Object.values(FILMS).map(f => f.OTR)) * Math.pow(filmQ10, (temperature - 22.0) / 10.0);
+        const filmOnly_o2 = maxFilmOTR * (pkg_area / 100.0);
+        const maxPinOTR = Math.max(...Object.values(PINHOLES).map(p => p.OTR));
+        if (total_o2_demand > filmOnly_o2 + 10 * maxPinOTR) {
+          diagnostics.push({
+            type: 'error',
+            title: 'O₂ demand far exceeds package capacity',
+            detail: `This product requires ${total_o2_demand.toFixed(0)} cc O₂/day, but the package can only supply roughly ${(filmOnly_o2 + 5 * maxPinOTR).toFixed(0)} cc/day with maximum perforations. Reduce product weight or increase package surface area.`
+          });
+        } else {
+          diagnostics.push({
+            type: 'error',
+            title: 'No feasible configurations found',
+            detail: 'No combination of available films, membranes, and pinholes could produce an atmosphere within acceptable bounds. Try increasing package dimensions or reducing product weight.'
+          });
+        }
+      } else {
+        const best = bestDesigns[0];
+        const o2_err_pct = Math.abs(best.ss_o2_pct - target_o2) / Math.max(target_o2, 0.5) * 100;
+        const co2_err_pct = Math.abs(best.ss_co2_pct - target_co2) / Math.max(target_co2, 0.5) * 100;
+
+        if (best.score > 0.5) {
+          // Poor convergence — explain why
+          const reasons = [];
+
+          if (target_co2 > 0 && target_co2 <= 1) {
+            // Very low but nonzero CO2 target is extremely hard
+            const minMaterialSelectivity = Math.min(
+              ...Object.values(MEMBRANES).map(m => 1 / m.CO2_ratio),
+              ...Object.values(PINHOLES).map(p => 1 / p.CO2_ratio)
+            );
+            reasons.push('The very low CO₂ target requires materials with extremely low CO₂ permeability relative to O₂, which is beyond what available membranes and pinholes can achieve.');
+          }
+
+          if (o2_err_pct > 40) {
+            if (best.ss_o2_pct < target_o2) {
+              reasons.push(`O₂ is settling at ${best.ss_o2_pct.toFixed(1)}% vs the ${target_o2}% target — the product\'s O₂ demand (${total_o2_demand.toFixed(0)} cc/day) is too high for this package size. Increase package area or reduce weight.`);
+            } else {
+              reasons.push(`O₂ is settling at ${best.ss_o2_pct.toFixed(1)}% vs the ${target_o2}% target — the product\'s O₂ demand is too low for even the most restrictive films. Try a smaller package or more product weight.`);
+            }
+          }
+
+          if (co2_err_pct > 40 && target_co2 > 0) {
+            if (best.ss_co2_pct > target_co2) {
+              reasons.push(`CO₂ is accumulating to ${best.ss_co2_pct.toFixed(1)}% vs the ${target_co2}% target. Available materials transmit CO₂ too slowly relative to O₂ for this produce\'s needs. Pinholes (CO₂:O₂ ratio ~0.81) help but may not be sufficient.`);
+            } else {
+              reasons.push(`CO₂ is only ${best.ss_co2_pct.toFixed(1)}% vs the ${target_co2}% target — CO₂ is escaping too rapidly. Fewer pinholes or lower-permeability films may help.`);
+            }
+          }
+
+          if (reasons.length === 0) {
+            reasons.push('The available membrane/pinhole materials cannot simultaneously achieve both the O₂ and CO₂ targets for this produce. The recommended design is the best available compromise.');
+          }
+
+          diagnostics.push({
+            type: 'warning',
+            title: 'Weak convergence — best design is a compromise',
+            detail: reasons.join(' ')
+          });
+        } else if (best.score > 0.2) {
+          diagnostics.push({
+            type: 'info',
+            title: 'Acceptable design found with some trade-offs',
+            detail: `The recommended design approximates both targets but is not exact. O₂ error: ${o2_err_pct.toFixed(0)}%, CO₂ error: ${co2_err_pct.toFixed(0)}%. Fine-tuning pinhole count or membrane hole diameter on the production line may improve results.`
+          });
+        }
+      }
+
       setReport({
         info: { produce, pkg_area, weight_kg, weight_lbs: weight, rr, total_o2_demand, target_o2, target_co2, temperature, shelfLife, width, length, depth },
-        designs: unique.slice(0, 30)
+        designs: bestDesigns,
+        diagnostics
       });
       setIsCalculating(false);
     }, 100);
@@ -485,7 +569,7 @@ export default function App() {
       <div className="mx-auto max-w-[1440px] space-y-6">
 
         {/* Header */}
-        <div className="relative mb-2 h-[112px] overflow-visible rounded-[24px] bg-gradient-to-r from-[#0a1120] via-[#12223a] to-[#0a1120] shadow-[inset_0_1px_0_rgba(16,185,129,0.45),0_14px_32px_rgba(15,23,42,0.25)]">
+        <div className="relative mb-2 h-[112px] overflow-visible rounded-[24px] bg-gradient-to-r from-[#0a1120] via-[#12223a] to-[#0a1120] shadow-[inset_0_1px_0_rgba(16,185,129,0.45),0_14px_32px_rgba(15,23,42,0.25)] before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:rounded-t-[24px] before:bg-gradient-to-r before:from-emerald-400 before:via-green-400 before:to-emerald-400">
           <div className="absolute inset-x-0 top-0 flex justify-center px-3">
             <div className="rounded-b-[26px] rounded-t-[18px] border border-emerald-300/35 bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 text-white shadow-[0_10px_22px_rgba(16,185,129,0.35)]">
               <div className="flex items-center gap-4">
@@ -599,11 +683,49 @@ export default function App() {
               <div className="flex h-full flex-col items-center justify-center rounded-[24px] border border-red-200 bg-red-50 p-8 text-red-600">
                 <AlertTriangle size={48} className="mb-4" />
                 <h3 className="text-2xl font-black">No Feasible Designs Found</h3>
-                <p className="mt-2 text-center text-sm">Try increasing package area, as all packages require at least 1 baseline pinhole.</p>
+                {report.diagnostics && report.diagnostics.length > 0 ? (
+                  <div className="mt-4 w-full max-w-xl space-y-3">
+                    {report.diagnostics.map((d, i) => (
+                      <div key={i} className={`rounded-xl border p-4 text-left text-sm ${
+                        d.type === 'error' ? 'border-red-300 bg-red-100 text-red-800' :
+                        d.type === 'warning' ? 'border-amber-300 bg-amber-50 text-amber-800' :
+                        'border-blue-200 bg-blue-50 text-blue-800'
+                      }`}>
+                        <div className="font-bold mb-1">{d.title}</div>
+                        <div className="text-xs leading-relaxed opacity-90">{d.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-center text-sm">Try increasing package area or reducing product weight.</p>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
                 
+                {/* Diagnostics Banner */}
+                {report.diagnostics && report.diagnostics.length > 0 && (
+                  <div className="space-y-3">
+                    {report.diagnostics.map((d, i) => (
+                      <div key={i} className={`flex items-start gap-3 rounded-2xl border p-5 ${
+                        d.type === 'error' ? 'border-red-300 bg-red-50 text-red-800' :
+                        d.type === 'warning' ? 'border-amber-300 bg-amber-50 text-amber-900' :
+                        'border-blue-200 bg-blue-50 text-blue-800'
+                      }`}>
+                        <AlertTriangle size={20} className={`mt-0.5 shrink-0 ${
+                          d.type === 'error' ? 'text-red-500' :
+                          d.type === 'warning' ? 'text-amber-500' :
+                          'text-blue-500'
+                        }`} />
+                        <div>
+                          <div className="font-bold text-sm">{d.title}</div>
+                          <div className="text-xs leading-relaxed mt-1 opacity-90">{d.detail}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Info Header */}
                 <div className="grid gap-4 rounded-[24px] border border-emerald-200 bg-gradient-to-r from-emerald-50 via-slate-50 to-emerald-50 p-6 md:grid-cols-2 lg:grid-cols-4">
                   <div>
