@@ -416,20 +416,20 @@ export default function App() {
       <div className="mx-auto max-w-[1440px] space-y-6">
 
         {/* Header */}
-        <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
-          <div className="hidden h-[126px] rounded-[22px] bg-gradient-to-r from-[#0b1220] to-[#17283f] shadow-[inset_0_1px_0_rgba(16,185,129,0.25)] md:block" />
-          <div className="rounded-[28px] bg-gradient-to-r from-emerald-500 to-green-600 px-7 py-5 text-white shadow-[0_12px_30px_rgba(16,185,129,0.45)]">
-            <div className="flex items-center gap-4">
-              <div className="rounded-2xl bg-white/90 p-3 text-emerald-600 shadow-sm">
-                <Wind size={34} />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight md:text-5xl">MAP Designer</h1>
-                <p className="text-sm text-emerald-50 md:text-xl">Quadratic Steady-State Solver • Mogri et al. Kinetics</p>
+        <div className="relative mb-2 h-[128px] overflow-visible rounded-[24px] bg-gradient-to-r from-[#0b1220] via-[#14263f] to-[#0b1220] shadow-[inset_0_1px_0_rgba(16,185,129,0.35),0_14px_34px_rgba(15,23,42,0.28)]">
+          <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-3">
+            <div className="rounded-[26px] border border-emerald-300/30 bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-4 text-white shadow-[0_12px_26px_rgba(16,185,129,0.4)]">
+              <div className="flex items-center gap-4">
+                <div className="rounded-xl bg-white/90 p-3 text-emerald-600 shadow-sm">
+                  <Wind size={28} />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-black tracking-tight md:text-5xl">MAP Designer</h1>
+                  <p className="text-sm text-emerald-50 md:text-lg">Quadratic Steady-State Solver • Mogri et al. Kinetics</p>
+                </div>
               </div>
             </div>
           </div>
-          <div className="hidden h-[126px] rounded-[22px] bg-gradient-to-l from-[#0b1220] to-[#17283f] shadow-[inset_0_1px_0_rgba(16,185,129,0.25)] md:block" />
         </div>
 
         <div className="grid grid-cols-1 gap-7 xl:grid-cols-12">
@@ -442,13 +442,13 @@ export default function App() {
             >
 
               <div>
-                <label className="mb-3 flex items-center text-2xl font-bold tracking-tight text-white md:text-4xl">
+                <label className="mb-3 flex items-center text-2xl font-bold tracking-tight text-white md:text-3xl">
                   <Leaf size={22} className="mr-2 text-emerald-300" /> Produce Select
                 </label>
                 <select
                   value={produce}
                   onChange={(e) => setProduce(e.target.value)}
-                  className="w-full rounded-xl border border-emerald-300/70 bg-white px-4 py-3 text-lg text-slate-900 outline-none transition focus:border-emerald-300 md:text-2xl"
+                  className="w-full rounded-xl border border-emerald-300/70 bg-white px-4 py-3 text-lg text-slate-900 outline-none transition focus:border-emerald-300 md:text-xl"
                 >
                   <optgroup label="Fruits">
                     {Object.entries(PRODUCE_DATA).filter(([_, v]) => v.category === 'fruit').map(([k, _]) => <option key={k} value={k} className="text-slate-900 bg-white">{k}</option>)}
@@ -460,35 +460,35 @@ export default function App() {
               </div>
 
               <div className="border-t border-emerald-300/30 pt-5">
-                <label className="mb-4 flex items-center text-2xl font-bold tracking-tight text-white md:text-4xl">
+                <label className="mb-4 flex items-center text-2xl font-bold tracking-tight text-white md:text-3xl">
                   <Settings size={22} className="mr-2 text-emerald-300" /> Package Profile
                 </label>
                 <div className="mb-4 grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm text-emerald-100/90 md:text-lg">W (in)</label>
-                    <input type="number" step="0.1" value={width} onChange={e=>setWidth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-3xl" />
+                    <label className="block text-sm text-emerald-100/90 md:text-base">W (in)</label>
+                    <input type="number" step="0.1" value={width} onChange={e=>setWidth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-2xl" />
                   </div>
                   <div>
-                    <label className="block text-sm text-emerald-100/90 md:text-lg">L (in)</label>
-                    <input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-3xl" />
+                    <label className="block text-sm text-emerald-100/90 md:text-base">L (in)</label>
+                    <input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-2xl" />
                   </div>
                   <div>
-                    <label className="block text-sm text-emerald-100/90 md:text-lg">D (in)</label>
-                    <input type="number" step="0.1" value={depth} onChange={e=>setDepth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-3xl" />
+                    <label className="block text-sm text-emerald-100/90 md:text-base">D (in)</label>
+                    <input type="number" step="0.1" value={depth} onChange={e=>setDepth(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-2xl" />
                   </div>
                   <div>
-                    <label className="block text-sm text-emerald-100/90 md:text-lg">Weight (lbs)</label>
-                    <input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-3xl" />
+                    <label className="block text-sm text-emerald-100/90 md:text-base">Weight (lbs)</label>
+                    <input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full rounded-xl border border-slate-300/30 bg-white px-3 py-2 text-xl text-slate-800 md:text-2xl" />
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 pt-1">
                 <input type="checkbox" checked={allowMixed} onChange={e=>setAllowMixed(e.target.checked)} className="h-6 w-6 rounded border-emerald-200 text-emerald-500" id="mixed" />
-                <label htmlFor="mixed" className="cursor-pointer text-base font-medium text-emerald-50 md:text-xl">Explore Mixed-Membrane Arrays</label>
+                <label htmlFor="mixed" className="cursor-pointer text-base font-medium text-emerald-50 md:text-lg">Explore Mixed-Membrane Arrays</label>
               </div>
 
-              <button type="submit" disabled={isCalculating} className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 py-4 text-xl font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.45)] transition hover:brightness-110 md:text-2xl">
+              <button type="submit" disabled={isCalculating} className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 py-4 text-xl font-black text-white shadow-[0_8px_20px_rgba(16,185,129,0.45)] transition hover:brightness-110 md:text-xl">
                 {isCalculating ? "Running Determinants..." : <><Calculator size={18} className="mr-2" /> Solve Steady-State</>}
               </button>
             </form>
