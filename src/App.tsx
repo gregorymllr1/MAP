@@ -194,10 +194,22 @@ function solveSteadyState(total_otr_o2, total_otr_co2, produce_data, temperature
 function scoreDesign(ss_o2, ss_co2, target_o2, target_co2, total_membranes, n_pinholes, n_membrane_types) {
   const o2_err = Math.abs(ss_o2 - target_o2) / Math.max(target_o2, 0.5);
   const co2_err = Math.abs(ss_co2 - target_co2) / Math.max(target_co2, 0.5);
-  let score = o2_err + co2_err;
-  score += total_membranes * 0.005;
-  score += n_pinholes * 0.002;
-  score += (n_membrane_types - 1) * 0.01;
+  
+  // Geometric mean rewards being close on BOTH gases equally
+  const geo_mean = Math.sqrt((o2_err + 0.001) * (co2_err + 0.001));
+  
+  // Balance penalty: punish designs that nail one gas but miss the other
+  const balance_penalty = Math.abs(o2_err - co2_err) * 0.3;
+  
+  // Additive component still matters for overall accuracy
+  const additive = (o2_err + co2_err) * 0.5;
+  
+  let score = geo_mean + balance_penalty + additive;
+  
+  // Small complexity penalties
+  score += total_membranes * 0.003;
+  score += n_pinholes * 0.001;
+  score += (n_membrane_types - 1) * 0.008;
   return score;
 }
 
@@ -323,7 +335,8 @@ export default function App() {
         };
       };
 
-      // PHASE 1: Single Membrane + Safety Pinholes
+      // PHASE 1: Single Membrane + Expanded Pinhole Search
+      // Uses Cramer's rule for initial estimate, then scans a wider neighborhood
       Object.keys(FILMS).forEach(film_name => {
         membrane_names.forEach(mem_name => {
           HOLE_SIZES.forEach(hole_diam => {
@@ -349,40 +362,64 @@ export default function App() {
               const rem_o2 = total_o2_demand - f_film_o2;
               const rem_co2 = total_co2_production - f_film_co2;
 
+              // Calculate optimal mix via Cramer's rule determinant
               const det = f_mem_o2 * f_pin_co2 - f_pin_o2 * f_mem_co2;
               if (Math.abs(det) > 1e-10) {
                 const n_mem_exact = (rem_o2 * f_pin_co2 - f_pin_o2 * rem_co2) / det;
                 const n_pin_exact = (f_mem_o2 * rem_co2 - rem_o2 * f_mem_co2) / det;
 
-                [Math.max(0, Math.floor(n_mem_exact)), Math.max(0, Math.ceil(n_mem_exact))].forEach(n_m => {
-                  [Math.max(1, Math.floor(n_pin_exact)), Math.max(1, Math.ceil(n_pin_exact))].forEach(n_p => {
-                    if (n_m <= 10 && n_p <= 30) {
-                      const d = tryConfigAndScore(film_name, [{name: mem_name, hole_diameter: hole_diam, count: n_m}], pinhole_type, n_p);
-                      if (d) designs.push(d);
-                    }
-                  });
-                });
+                // Expanded search: scan ±2 around the Cramer's rule solution
+                const mem_lo = Math.max(0, Math.floor(n_mem_exact) - 2);
+                const mem_hi = Math.min(10, Math.ceil(n_mem_exact) + 2);
+                const pin_lo = Math.max(0, Math.floor(n_pin_exact) - 3);
+                const pin_hi = Math.min(30, Math.ceil(n_pin_exact) + 3);
+
+                for (let n_m = mem_lo; n_m <= mem_hi; n_m++) {
+                  for (let n_p = pin_lo; n_p <= pin_hi; n_p++) {
+                    const d = tryConfigAndScore(film_name, [{name: mem_name, hole_diameter: hole_diam, count: n_m}], pinhole_type, n_p);
+                    if (d) designs.push(d);
+                  }
+                }
+              }
+
+              // Also try pure-pinhole solutions (0 membranes) for CO2-sensitive produce
+              for (let n_p = 1; n_p <= 20; n_p++) {
+                const d = tryConfigAndScore(film_name, [{name: mem_name, hole_diameter: hole_diam, count: 0}], pinhole_type, n_p);
+                if (d) designs.push(d);
+              }
+
+              // Membrane-only solutions (0 pinholes) for low-respiration produce
+              for (let n_m = 1; n_m <= 10; n_m++) {
+                const d = tryConfigAndScore(film_name, [{name: mem_name, hole_diameter: hole_diam, count: n_m}], pinhole_type, 0);
+                if (d) designs.push(d);
               }
             });
           });
         });
       });
 
-      // PHASE 2: Mixed Membranes
+      // PHASE 2: Mixed Membranes with selectivity-aware targeting
       if (allowMixed) {
+        const phase2_holes = [0.375, 0.5, 0.75, 1.0];
+        const phase2_pinholes = [0, 1, 2, 4, 6, 10];
         Object.keys(FILMS).forEach(film_name => {
           for(let i=0; i<membrane_names.length; i++) {
             for(let j=i+1; j<membrane_names.length; j++) {
-              [0.5, 1.0].forEach(hole_a => { 
-                [0.5, 1.0].forEach(hole_b => {
+              phase2_holes.forEach(hole_a => { 
+                phase2_holes.forEach(hole_b => {
                   const ma = membrane_names[i], mb = membrane_names[j];
-                  for(let na=1; na<=3; na++) {
-                    for(let nb=1; nb<=3; nb++) {
-                      const d = tryConfigAndScore(film_name, [
-                        {name: ma, hole_diameter: hole_a, count: na},
-                        {name: mb, hole_diameter: hole_b, count: nb}
-                      ], 'Needle', 1); 
-                      if (d) designs.push(d);
+                  for(let na=0; na<=3; na++) {
+                    for(let nb=0; nb<=3; nb++) {
+                      if (na === 0 && nb === 0) continue;
+                      phase2_pinholes.forEach(np => {
+                        Object.keys(PINHOLES).forEach(pinhole_type => {
+                          const d = tryConfigAndScore(film_name, [
+                            {name: ma, hole_diameter: hole_a, count: na},
+                            {name: mb, hole_diameter: hole_b, count: nb}
+                          ], pinhole_type, np); 
+                          if (d) designs.push(d);
+                        });
+                      });
                     }
                   }
                 });
@@ -391,6 +428,38 @@ export default function App() {
           }
         });
       }
+
+      // PHASE 3: Local Refinement Pass
+      // Take the top candidates so far and test ±2 variations around each
+      const sorted_prelim = designs.sort((a,b) => a.score - b.score).slice(0, 40);
+      const refinement_designs = [];
+      sorted_prelim.forEach(d => {
+        const parts = d.membrane_desc.split(' + ');
+        if (parts.length === 1 && parts[0] !== 'None') {
+          const match = parts[0].match(/(\d+)x\s+(\w+)\s+\(([\d.]+)"/); 
+          if (match) {
+            const base_count = parseInt(match[1]);
+            const mem_name = match[2];
+            const hole_d = parseFloat(match[3]);
+            const pin_match = d.pinhole_desc.match(/(\d+)x\s+(.+)/);
+            if (pin_match) {
+              const base_pin = parseInt(pin_match[1]);
+              const pin_type = pin_match[2];
+              for (let dm = -2; dm <= 2; dm++) {
+                for (let dp = -2; dp <= 2; dp++) {
+                  const nm = base_count + dm;
+                  const np = base_pin + dp;
+                  if (nm >= 0 && nm <= 12 && np >= 0 && np <= 30) {
+                    const rd = tryConfigAndScore(d.film, [{name: mem_name, hole_diameter: hole_d, count: nm}], pin_type, np);
+                    if (rd) refinement_designs.push(rd);
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+      designs.push(...refinement_designs);
 
       // Sort and Deduplicate
       const unique = [];
