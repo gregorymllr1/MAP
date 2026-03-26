@@ -226,9 +226,9 @@ const AccuracyBar = ({ ss_val, target_val, label, unit = "%" }) => {
     : 'linear-gradient(90deg, #10b981 0%, #22c55e 55%, #a7f3d0 100%)';
 
   return (
-    <div className="my-2 grid grid-cols-[44px_1fr_auto] items-center gap-2 md:grid-cols-[56px_112px_1fr_auto_auto]">
-      <span className="text-2xl leading-none font-bold text-slate-900 md:text-[2.6rem]">{label}</span>
-      <span className="hidden text-sm text-slate-700 md:block">Target: {target_val}{unit}</span>
+    <div className="my-2 grid grid-cols-[44px_1fr_auto] items-center gap-2 md:grid-cols-[76px_132px_1fr_auto_auto]">
+      <span className="whitespace-nowrap text-2xl leading-none font-bold text-slate-900 md:text-[2.2rem]">{label}</span>
+      <span className="hidden whitespace-nowrap text-sm text-slate-700 md:block">Target: {target_val}{unit}</span>
       <div className="h-4 overflow-hidden rounded-full bg-gradient-to-r from-slate-100 to-slate-200 shadow-inner md:h-5">
         <div
           style={{ width: `${bar_w}%`, background: fillGradient }}
