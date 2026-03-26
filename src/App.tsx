@@ -569,9 +569,9 @@ export default function App() {
       <div className="mx-auto max-w-[1440px] space-y-6">
 
         {/* Header */}
-        <div className="relative mb-2 h-[112px] overflow-visible rounded-[24px] bg-gradient-to-r from-[#0a1120] via-[#12223a] to-[#0a1120] shadow-[inset_0_1px_0_rgba(16,185,129,0.45),0_14px_32px_rgba(15,23,42,0.25)] before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:rounded-t-[24px] before:bg-gradient-to-r before:from-emerald-400 before:via-green-400 before:to-emerald-400">
-          <div className="absolute inset-x-0 top-0 flex justify-center px-3">
-            <div className="rounded-b-[26px] rounded-t-[18px] border border-emerald-300/35 bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 text-white shadow-[0_10px_22px_rgba(16,185,129,0.35)]">
+        <div className="relative mb-2 h-[112px] overflow-hidden rounded-[24px] bg-gradient-to-r from-[#0a1120] via-[#12223a] to-[#0a1120] shadow-[inset_0_1px_0_rgba(16,185,129,0.45),0_14px_32px_rgba(15,23,42,0.25)] before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:rounded-t-[24px] before:bg-gradient-to-r before:from-emerald-400 before:via-green-400 before:to-emerald-400">
+          <div className="absolute inset-x-0 top-[2px] flex justify-center px-4">
+            <div className="rounded-[20px] border border-emerald-300/30 bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 text-white shadow-[0_6px_16px_rgba(16,185,129,0.28)]">
               <div className="flex items-center gap-4">
                 <div className="rounded-xl bg-white/90 p-3 text-emerald-600 shadow-sm">
                   <Wind size={24} />
