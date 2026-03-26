@@ -407,7 +407,7 @@ export default function App() {
           <div className="flex items-center space-x-4">
             <div className="bg-white/20 p-3 rounded-lg"><Package size={32} /></div>
             <div>
-              <h1 className="text-2xl font-bold tracking-wide">Breatheway MAP Engine</h1>
+              <h1 className="text-2xl font-bold tracking-wide">MAP Designer</h1>
               <p className="text-green-100 text-sm mt-1">Quadratic Steady-State Solver • Mogri et al. Kinetics</p>
             </div>
           </div>
